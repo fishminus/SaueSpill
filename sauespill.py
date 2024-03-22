@@ -49,6 +49,21 @@ class Player(pygame.sprite.Sprite):#spillerklasse
         else:
             self.image.fill(GREEN)
 
+        obstacles_hit = pygame.sprite.spritecollide(self, obstacles, False)
+        for obstacle in obstacles_hit:
+            # If moving right, adjust player position to the left side of the obstacle
+            if dx > 0:
+                self.rect.right = obstacle.rect.left
+            # If moving left, adjust player position to the right side of the obstacle
+            elif dx < 0:
+                self.rect.left = obstacle.rect.right
+            # If moving down, adjust player position to the top side of the obstacle
+            if dy > 0:
+                self.rect.bottom = obstacle.rect.top
+            # If moving up, adjust player position to the bottom side of the obstacle
+            elif dy < 0:
+                self.rect.top = obstacle.rect.bottom
+
 class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
     def __init__(self):
         super().__init__()
@@ -68,6 +83,13 @@ class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
             self.dx *= -1
         if self.rect.y <= 0 or self.rect.y >= SCREEN_HEIGHT - GHOST_SIZE:
             self.dy *= -1
+        
+        obstacles_hit = pygame.sprite.spritecollide(self, obstacles, False)
+        for obs in obstacles_hit:
+            if self.rect.x <= 0 or self.rect.x >= OBSTACLE_SIZE - GHOST_SIZE:
+                self.dx *= -1
+            if self.rect.y <= 0 or self.rect.y >= OBSTACLE_SIZE - GHOST_SIZE:
+                self.dy *= -1
 
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -159,6 +181,9 @@ while running:
 
     # Oppdaterer spillerens posisjon
     player.update(dx, dy)
+    
+    for big_g in ghosts:
+        big_g.update()
 
     # Sjekker for kollisjoner mellom spiller og sau
     sheeps_hit = pygame.sprite.spritecollide(player, sheep, False)
@@ -167,27 +192,11 @@ while running:
             one.kill()
             player.SheepCarry = True
 
-    # Sjekker for kollisjon mellom spiller og hindringer
-    obstacles_hit = pygame.sprite.spritecollide(player, obstacles, False)
-    for obstacle in obstacles_hit:
-        # Sjekk kollisjon fra venstre side
-        if player.rect.right > obstacle.rect.left and player.rect.left < obstacle.rect.left:
-            player.rect.right = obstacle.rect.left
-        # Sjekk kollisjon fra høyre side
-        elif player.rect.left < obstacle.rect.right and player.rect.right > obstacle.rect.right:
-            player.rect.left = obstacle.rect.right
-        # Sjekk kollisjon fra toppen
-        if player.rect.bottom > obstacle.rect.top and player.rect.top < obstacle.rect.top:
-            player.rect.bottom = obstacle.rect.top
-        # Sjekk kollisjon fra bunnen
-        elif player.rect.top < obstacle.rect.bottom and player.rect.bottom > obstacle.rect.bottom:
-            player.rect.top = obstacle.rect.bottom
-
-
     # Sjekker for kollisjon mellom spiller og spøkelser
     ghosts_hit = pygame.sprite.spritecollide(player, ghosts, False)
     if ghosts_hit:
         running = False  # Spillet slutter hvis spilleren treffer et spøkelse
+
 
     # Tegner alt
     screen.fill(BLACK)
@@ -195,27 +204,18 @@ while running:
     pygame.display.flip()
 
     # Sjekker om spilleren har kommet til startsonen
-    if player.rect.x <= 0:
+    if player.rect.x <= 0 and player.SheepCarry:
+        player.SheepCarry = False
         # Legger til poeng
         print("Poeng!")
         # Øker spillerens fart
         SPEED += 1
         # Legger til ny sau
-        new_sheep = Sheep(random.randint(SCREEN_WIDTH // 2, SCREEN_WIDTH - SHEEP_SIZE),
-                          random.randint(0, SCREEN_HEIGHT - SHEEP_SIZE))
-        all_sprites.add(new_sheep)
-        sheep.add(new_sheep)
+        add_sheep(1)
         # Legger til nye hindringer
-        for _ in range(3):
-            new_obstacle = Obstacle(random.randint(0, SCREEN_WIDTH - OBSTACLE_SIZE),
-                                    random.randint(0, SCREEN_HEIGHT - OBSTACLE_SIZE))
-            all_sprites.add(new_obstacle)
-            obstacles.add(new_obstacle)
+        add_obstacles(3)
         # Legger til nye spøkelser
-        for _ in range(1):
-            new_ghost = Ghost()
-            all_sprites.add(new_ghost)
-            ghosts.add(new_ghost)
+        add_ghosts(1)
 
 # Avslutter Pygame
 pygame.quit()
