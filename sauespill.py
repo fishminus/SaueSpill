@@ -7,6 +7,8 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
+GREENNT = (0, 150, 0)
+GREENNTBORING = (0, 100, 0)
 
 # Størrelse og andre konstanter
 SCREEN_WIDTH = 800
@@ -85,10 +87,16 @@ class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
             self.dy *= -1
         
         obstacles_hit = pygame.sprite.spritecollide(self, obstacles, False)
-        for obs in obstacles_hit:
+        for _ in obstacles_hit:
             if self.rect.x <= 0 or self.rect.x >= OBSTACLE_SIZE - GHOST_SIZE:
                 self.dx *= -1
             if self.rect.y <= 0 or self.rect.y >= OBSTACLE_SIZE - GHOST_SIZE:
+                self.dy *= -1
+        safezones_hit = pygame.sprite.spritecollide(self, safezones, False)
+        for sf in safezones_hit:
+            if self.rect.x <= 0 or self.rect.x >= sf.rect.x - GHOST_SIZE:
+                self.dx *= -1
+            if self.rect.y <= 0 or self.rect.y >= sf.rect.y - GHOST_SIZE:
                 self.dy *= -1
 
 class Obstacle(pygame.sprite.Sprite):
@@ -96,6 +104,19 @@ class Obstacle(pygame.sprite.Sprite):
         super().__init__()
         self.image = pygame.Surface([OBSTACLE_SIZE, OBSTACLE_SIZE])
         self.image.fill(BLUE)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y#posisjonsvariabler
+    
+class Safe_Zone(pygame.sprite.Sprite):
+    def __init__(self, x, y, collecterplace, scalex, scaley):
+        super().__init__()
+        self.image = pygame.Surface([scalex, scaley])
+        if(collecterplace):
+            self.image.fill(GREENNT)
+        else:
+            self.image.fill(GREENNTBORING)
+
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y#posisjonsvariabler
@@ -121,21 +142,27 @@ all_sprites = pygame.sprite.Group()
 obstacles = pygame.sprite.Group()
 sheep = pygame.sprite.Group()
 ghosts = pygame.sprite.Group()
+safezones = pygame.sprite.Group()
 
 player = Player()
 all_sprites.add(player)
 
+def Safe_zones():
+    safezone = Safe_Zone(0,0,True,200,800)
+    safezone2 = Safe_Zone(600,0,False,200,800)
+    safezones.add(safezone)
+    safezones.add(safezone2)
 # Legger til hindringer
 def add_obstacles(amt):
     for _ in range(amt):
-        obstacle = Obstacle(random.randint(0, SCREEN_WIDTH - OBSTACLE_SIZE), random.randint(0, SCREEN_HEIGHT - OBSTACLE_SIZE))
+        obstacle = Obstacle(random.randint(200, SCREEN_WIDTH - OBSTACLE_SIZE-200), random.randint(0, SCREEN_HEIGHT - OBSTACLE_SIZE))
         all_sprites.add(obstacle)
         obstacles.add(obstacle)
 
 # Legger til sauene
 def add_sheep(amt):
     for _ in range(amt):
-        sheep_obj = Sheep(random.randint(SCREEN_WIDTH // 2, SCREEN_WIDTH - SHEEP_SIZE), random.randint(0, SCREEN_HEIGHT - SHEEP_SIZE))
+        sheep_obj = Sheep(random.randint(600, SCREEN_WIDTH - SHEEP_SIZE), random.randint(0, SCREEN_HEIGHT - SHEEP_SIZE))
         all_sprites.add(sheep_obj)
         sheep.add(sheep_obj)
 
@@ -146,6 +173,7 @@ def add_ghosts(amt):
         all_sprites.add(ghost)
         ghosts.add(ghost)
 
+Safe_zones()
 add_obstacles(3)
 add_sheep(3)
 add_ghosts(1)
@@ -202,6 +230,7 @@ while running:
 
     # Tegner alt
     screen.fill(BLACK)
+    safezones.draw(screen)#tegner denne spesifikt før alt det andre (layering)
     all_sprites.draw(screen)
     pygame.display.flip()
 
