@@ -13,7 +13,7 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 PLAYER_SIZE = 30
 GHOST_SIZE = 30
-OBSTACLE_SIZE = 30
+OBSTACLE_SIZE = 100
 SHEEP_SIZE = 20
 SPEED = 5
 GHOST_SPEED = 3
@@ -53,16 +53,16 @@ class Player(pygame.sprite.Sprite):#spillerklasse
         for obstacle in obstacles_hit:
             # If moving right, adjust player position to the left side of the obstacle
             if dx > 0:
-                self.rect.right = obstacle.rect.left
+                self.rect.right -= dx*2
             # If moving left, adjust player position to the right side of the obstacle
             elif dx < 0:
-                self.rect.left = obstacle.rect.right
+                self.rect.left -= dx*2
             # If moving down, adjust player position to the top side of the obstacle
             if dy > 0:
-                self.rect.bottom = obstacle.rect.top
+                self.rect.bottom -= dy*2
             # If moving up, adjust player position to the bottom side of the obstacle
             elif dy < 0:
-                self.rect.top = obstacle.rect.bottom
+                self.rect.top -= dy*2
 
 class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
     def __init__(self):
@@ -191,6 +191,8 @@ while running:
         if not player.SheepCarry:
             one.kill()
             player.SheepCarry = True
+        elif player.SheepCarry:#hvorfor ville spilleren dødd når dette skjer
+            running = False
 
     # Sjekker for kollisjon mellom spiller og spøkelser
     ghosts_hit = pygame.sprite.spritecollide(player, ghosts, False)
