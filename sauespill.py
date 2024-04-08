@@ -6,7 +6,7 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
-GREEN = (0, 255, 0)
+GREEN = (0, 255, 0)#forskjellige grønnfarger
 GREENNT = (0, 150, 0)
 GREENNTBORING = (0, 100, 0)
 
@@ -33,7 +33,7 @@ class Player(pygame.sprite.Sprite):#spillerklasse
         self.rect.y = SCREEN_HEIGHT // 2
         self.SheepCarry = False
 
-    def update(self, dx, dy):
+    def update(self, dx, dy):#Oppdateringsfunksjon for spilleren variabler
         self.rect.x += dx
         self.rect.y += dy
         # Sjekker kantkollisjon
@@ -46,23 +46,19 @@ class Player(pygame.sprite.Sprite):#spillerklasse
         elif self.rect.y >= SCREEN_HEIGHT - PLAYER_SIZE:
             self.rect.y = SCREEN_HEIGHT - PLAYER_SIZE
         
-        if not self.SheepCarry:
+        if not self.SheepCarry:#oppdaterer om spilleren bærer sau
             self.image.fill(WHITE)
         else:
             self.image.fill(GREEN)
 
         obstacles_hit = pygame.sprite.spritecollide(self, obstacles, False)
-        for obstacle in obstacles_hit:
-            # If moving right, adjust player position to the left side of the obstacle
+        for _ in obstacles_hit:#Litt rar veggkollisjon
             if dx > 0:
                 self.rect.right -= dx
-            # If moving left, adjust player position to the right side of the obstacle
             elif dx < 0:
                 self.rect.left -= dx
-            # If moving down, adjust player position to the top side of the obstacle
             if dy > 0:
                 self.rect.bottom -= dy
-            # If moving up, adjust player position to the bottom side of the obstacle
             elif dy < 0:
                 self.rect.top -= dy
 
@@ -89,15 +85,12 @@ class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
         
         obstacles_hit = pygame.sprite.spritecollide(self, obstacles, False)
         print(self.dx, self.dy)
-        for obs in obstacles_hit:
+        for obs in obstacles_hit:#det er en feil her som gjør at spøkelset spretter feil i vertikalen
             if self.rect.x <= obs.rect.x + OBSTACLE_SIZE and self.rect.x >= obs.rect.x - GHOST_SIZE:
-                # Collided with left or right side of obstacle, reverse horizontal velocity
                 self.dx *= -1
                 break
             elif self.rect.y <= obs.rect.y + OBSTACLE_SIZE and self.rect.y >= obs.rect.y - GHOST_SIZE:
-                # Collided with top or bottom side of obstacle, reverse vertical velocity
                 self.dy *= -1
-                break
         safezones_hit = pygame.sprite.spritecollide(self, safezones, False)
         for sf in safezones_hit:
             if self.rect.x <= sf.rect.x or self.rect.x >= sf.rect.x - GHOST_SIZE:
@@ -106,28 +99,28 @@ class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
             if self.rect.y <= sf.rect.y or self.rect.y >= sf.rect.y - GHOST_SIZE:
                 self.dy *= -1
 
-class Obstacle(pygame.sprite.Sprite):
+class Obstacle(pygame.sprite.Sprite):#for veggobjektene i spillet, de er bare statiske
     def __init__(self, x, y):
         super().__init__()
         self.image = pygame.Surface([OBSTACLE_SIZE, OBSTACLE_SIZE])
         self.image.fill(BLUE)
         self.rect = self.image.get_rect()
         self.rect.x = x
-        self.rect.y = y#posisjonsvariabler
+        self.rect.y = y
     
-class Safe_Zone(pygame.sprite.Sprite):
+class Safe_Zone(pygame.sprite.Sprite):#Safezones
     def __init__(self, x, y, collecterplace, scalex, scaley):
         super().__init__()
         self.image = pygame.Surface([scalex, scaley])
         self.collecterplace = collecterplace
-        if(collecterplace):
+        if(collecterplace):#kan sonen la spilleren sanke inn sauer - en boolean
             self.image.fill(GREENNT)
         else:
             self.image.fill(GREENNTBORING)
 
         self.rect = self.image.get_rect()
         self.rect.x = x
-        self.rect.y = y#posisjonsvariabler
+        self.rect.y = y
 
 class Sheep(pygame.sprite.Sprite):
     def __init__(self, x, y, pickupable):
@@ -137,16 +130,15 @@ class Sheep(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.pickupable = pickupable
+        self.pickupable = pickupable #kan den plukkes opp? dette brukes for sauene du får over til andre siden
 
 # Initialiser Pygame
 pygame.init()
 
-# Setter opp skjerm
 screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
 pygame.display.set_caption("Manic Mansion")
 
-# Oppretter spilleobjekter
+# Oppretter Objektgruppene for kollisjonsfunksjonen i pygame, veldig nyttig!
 all_sprites = pygame.sprite.Group()
 obstacles = pygame.sprite.Group()
 sheep = pygame.sprite.Group()
@@ -156,48 +148,47 @@ safezones = pygame.sprite.Group()
 player = Player()
 all_sprites.add(player)
 
-def Safe_zones():
+#Funksjoner for å legge til objekter tilrettelagt spillerkartet
+def Safe_zones():#to safezones, en for sauesanking og en annen som spillerbase
     safezone = Safe_Zone(0,0,True,200,800)
     safezone2 = Safe_Zone(600,0,False,200,800)
     safezones.add(safezone)
     safezones.add(safezone2)
-# Legger til hindringer
+
 def add_obstacles(amt):
     for _ in range(amt):
         obstacle = Obstacle(random.randint(200, SCREEN_WIDTH - OBSTACLE_SIZE-200), random.randint(0, SCREEN_HEIGHT - OBSTACLE_SIZE))
         all_sprites.add(obstacle)
         obstacles.add(obstacle)
 
-# Legger til sauene
 def add_sheep(amt):
     for _ in range(amt):
         sheep_obj = Sheep(random.randint(600, SCREEN_WIDTH - SHEEP_SIZE), random.randint(0, SCREEN_HEIGHT - SHEEP_SIZE),True)
         all_sprites.add(sheep_obj)
         sheep.add(sheep_obj)
 
-# Legger til spøkelser
 def add_ghosts(amt):
     for _ in range(amt):
         ghost = Ghost()
         all_sprites.add(ghost)
         ghosts.add(ghost)
 
+#Første objekter legges til her
 Safe_zones()
 add_obstacles(3)
 add_sheep(3)
 add_ghosts(1)
 
-# Lager en klokke for å styre oppdateringshastigheten
 clock = pygame.time.Clock()
 
-running = True
+running = True#running variabel for å tape spiller
 dx = dy = 0
 
 while running:
     # Holder spillet på riktig oppdateringshastighet
     clock.tick(30)
 
-    # Håndterer hendelser
+    # hendelser
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -216,7 +207,7 @@ while running:
             elif event.key == pygame.K_UP or event.key == pygame.K_DOWN or event.key == pygame.K_w or event.key == pygame.K_s:
                 dy = 0
 
-    # Oppdaterer spillerens posisjon
+    # Oppdaterer spilleren, med tidligere definert funksjon
     player.update(dx, dy)
     
     for big_g in ghosts:
@@ -228,7 +219,7 @@ while running:
         if not player.SheepCarry and one.pickupable:
             one.kill()
             player.SheepCarry = True
-        elif player.SheepCarry and one.pickupable:#hvorfor ville spilleren dødd når dette skjer
+        elif player.SheepCarry and one.pickupable:#hvorfor ville spilleren dødd når dette skjer (man dør hvis man rører en sau for mye)
             running = False
     safehits = pygame.sprite.spritecollide(player, safezones, False)
     for sf in safehits:
@@ -237,9 +228,9 @@ while running:
             sheep_obj = Sheep(player.rect.x-50, player.rect.y, False)
             all_sprites.add(sheep_obj)
             sheep.add(sheep_obj)
-            add_obstacles(1)
+            add_obstacles(3)#gjorde det litt mer vanskelig  
             add_sheep(1)
-            add_ghosts(1)
+            add_ghosts(3)
 
 
     # Sjekker for kollisjon mellom spiller og spøkelser
@@ -254,19 +245,9 @@ while running:
     all_sprites.draw(screen)
     pygame.display.flip()
 
-    # Sjekker om spilleren har kommet til startsonen
-    if player.rect.x <= 0 and player.SheepCarry:
-        player.SheepCarry = False
-        # Legger til poeng
-        print("Poeng!")
-        # Øker spillerens fart
-        SPEED += 1
-        # Legger til ny sau
-        add_sheep(1)
-        # Legger til nye hindringer
-        add_obstacles(3)
-        # Legger til nye spøkelser
-        add_ghosts(1)
-
 # Avslutter Pygame
 pygame.quit()
+
+'''brukte Chat-GPT for å jobbe med den uvandte kollisjonstypen
+og det grunnleggende rammeverket, men endret veldig mye etter 
+det så koden ser ikke veldig lik ut'''
