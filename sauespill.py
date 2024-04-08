@@ -15,7 +15,7 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 PLAYER_SIZE = 30
 GHOST_SIZE = 30
-OBSTACLE_SIZE = 100
+OBSTACLE_SIZE = 50
 SHEEP_SIZE = 20
 SPEED = 5
 GHOST_SPEED = 3
@@ -55,16 +55,16 @@ class Player(pygame.sprite.Sprite):#spillerklasse
         for obstacle in obstacles_hit:
             # If moving right, adjust player position to the left side of the obstacle
             if dx > 0:
-                self.rect.right -= dx*2
+                self.rect.right -= dx
             # If moving left, adjust player position to the right side of the obstacle
             elif dx < 0:
-                self.rect.left -= dx*2
+                self.rect.left -= dx
             # If moving down, adjust player position to the top side of the obstacle
             if dy > 0:
-                self.rect.bottom -= dy*2
+                self.rect.bottom -= dy
             # If moving up, adjust player position to the bottom side of the obstacle
             elif dy < 0:
-                self.rect.top -= dy*2
+                self.rect.top -= dy
 
 class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
     def __init__(self):
@@ -72,14 +72,15 @@ class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
         self.image = pygame.Surface([GHOST_SIZE, GHOST_SIZE])
         self.image.fill(RED)
         self.rect = self.image.get_rect()
-        self.rect.x = random.randint(0, SCREEN_WIDTH - GHOST_SIZE)
-        self.rect.y = random.randint(0, SCREEN_HEIGHT - GHOST_SIZE)
+        self.rect.x = random.randint(200, SCREEN_WIDTH - GHOST_SIZE-200)
+        self.rect.y = random.randint(200, SCREEN_HEIGHT - GHOST_SIZE-200)
         self.dx = random.choice([-1, 1]) * GHOST_SPEED
         self.dy = random.choice([-1, 1]) * GHOST_SPEED
 
     def update(self):
         self.rect.x += self.dx
         self.rect.y += self.dy
+
         # Sjekker kantkollisjon
         if self.rect.x <= 0 or self.rect.x >= SCREEN_WIDTH - GHOST_SIZE:
             self.dx *= -1
@@ -87,16 +88,22 @@ class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
             self.dy *= -1
         
         obstacles_hit = pygame.sprite.spritecollide(self, obstacles, False)
-        for _ in obstacles_hit:
-            if self.rect.x <= 0 or self.rect.x >= OBSTACLE_SIZE - GHOST_SIZE:
+        print(self.dx, self.dy)
+        for obs in obstacles_hit:
+            if self.rect.x <= obs.rect.x + OBSTACLE_SIZE and self.rect.x >= obs.rect.x - GHOST_SIZE:
+                # Collided with left or right side of obstacle, reverse horizontal velocity
                 self.dx *= -1
-            if self.rect.y <= 0 or self.rect.y >= OBSTACLE_SIZE - GHOST_SIZE:
+                break
+            elif self.rect.y <= obs.rect.y + OBSTACLE_SIZE and self.rect.y >= obs.rect.y - GHOST_SIZE:
+                # Collided with top or bottom side of obstacle, reverse vertical velocity
                 self.dy *= -1
+                break
         safezones_hit = pygame.sprite.spritecollide(self, safezones, False)
         for sf in safezones_hit:
-            if self.rect.x <= 0 or self.rect.x >= sf.rect.x - GHOST_SIZE:
+            if self.rect.x <= sf.rect.x or self.rect.x >= sf.rect.x - GHOST_SIZE:
                 self.dx *= -1
-            if self.rect.y <= 0 or self.rect.y >= sf.rect.y - GHOST_SIZE:
+                break
+            if self.rect.y <= sf.rect.y or self.rect.y >= sf.rect.y - GHOST_SIZE:
                 self.dy *= -1
 
 class Obstacle(pygame.sprite.Sprite):
@@ -112,6 +119,7 @@ class Safe_Zone(pygame.sprite.Sprite):
     def __init__(self, x, y, collecterplace, scalex, scaley):
         super().__init__()
         self.image = pygame.Surface([scalex, scaley])
+        self.collecterplace = collecterplace
         if(collecterplace):
             self.image.fill(GREENNT)
         else:
@@ -122,13 +130,14 @@ class Safe_Zone(pygame.sprite.Sprite):
         self.rect.y = y#posisjonsvariabler
 
 class Sheep(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, pickupable):
         super().__init__()
         self.image = pygame.Surface([SHEEP_SIZE, SHEEP_SIZE])
         self.image.fill(GREEN)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.pickupable = pickupable
 
 # Initialiser Pygame
 pygame.init()
@@ -162,7 +171,7 @@ def add_obstacles(amt):
 # Legger til sauene
 def add_sheep(amt):
     for _ in range(amt):
-        sheep_obj = Sheep(random.randint(600, SCREEN_WIDTH - SHEEP_SIZE), random.randint(0, SCREEN_HEIGHT - SHEEP_SIZE))
+        sheep_obj = Sheep(random.randint(600, SCREEN_WIDTH - SHEEP_SIZE), random.randint(0, SCREEN_HEIGHT - SHEEP_SIZE),True)
         all_sprites.add(sheep_obj)
         sheep.add(sheep_obj)
 
@@ -216,11 +225,22 @@ while running:
     # Sjekker for kollisjoner mellom spiller og sau
     sheeps_hit = pygame.sprite.spritecollide(player, sheep, False)
     for one in sheeps_hit:
-        if not player.SheepCarry:
+        if not player.SheepCarry and one.pickupable:
             one.kill()
             player.SheepCarry = True
-        elif player.SheepCarry:#hvorfor ville spilleren dødd når dette skjer
+        elif player.SheepCarry and one.pickupable:#hvorfor ville spilleren dødd når dette skjer
             running = False
+    safehits = pygame.sprite.spritecollide(player, safezones, False)
+    for sf in safehits:
+        if player.SheepCarry and sf.collecterplace:
+            player.SheepCarry = False
+            sheep_obj = Sheep(player.rect.x-50, player.rect.y, False)
+            all_sprites.add(sheep_obj)
+            sheep.add(sheep_obj)
+            add_obstacles(1)
+            add_sheep(1)
+            add_ghosts(1)
+
 
     # Sjekker for kollisjon mellom spiller og spøkelser
     ghosts_hit = pygame.sprite.spritecollide(player, ghosts, False)
