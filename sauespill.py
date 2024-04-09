@@ -82,15 +82,15 @@ class Ghost(pygame.sprite.Sprite):#spøkelsesklasse
             self.dx *= -1
         if self.rect.y <= 0 or self.rect.y >= SCREEN_HEIGHT - GHOST_SIZE:
             self.dy *= -1
-        
+        '''Jeg støtte på et problem med kollisjonen og bestemte meg for å simplifisere det, 
+        noe som gjorde det mye lettere å planlegge i spillet fordi aksjonene til spøkelsene ble lettere å
+        forutse. Ganske gøy egentlig!'''
         obstacles_hit = pygame.sprite.spritecollide(self, obstacles, False)
-        print(self.dx, self.dy)
-        for obs in obstacles_hit:#det er en feil her som gjør at spøkelset spretter feil i vertikalen
-            if self.rect.x <= obs.rect.x + OBSTACLE_SIZE and self.rect.x >= obs.rect.x - GHOST_SIZE:
-                self.dx *= -1
-                break
-            elif self.rect.y <= obs.rect.y + OBSTACLE_SIZE and self.rect.y >= obs.rect.y - GHOST_SIZE:
-                self.dy *= -1
+        for obs in obstacles_hit:
+            self.dx *= -1
+            self.dy *= -1
+
+        #kollisjon med safezones
         safezones_hit = pygame.sprite.spritecollide(self, safezones, False)
         for sf in safezones_hit:
             if self.rect.x <= sf.rect.x or self.rect.x >= sf.rect.x - GHOST_SIZE:
@@ -228,9 +228,9 @@ while running:
             sheep_obj = Sheep(player.rect.x-50, player.rect.y, False)
             all_sprites.add(sheep_obj)
             sheep.add(sheep_obj)
-            add_obstacles(3)#gjorde det litt mer vanskelig  
+            add_obstacles(2)#gjorde det litt mer vanskelig  
             add_sheep(1)
-            add_ghosts(3)
+            add_ghosts(2)
 
 
     # Sjekker for kollisjon mellom spiller og spøkelser
